@@ -1,0 +1,14 @@
+{
+    "client_id": 1,
+    "pharmacie_id": 1,
+    "produits": [
+        {
+            "produit_id": 1,
+            "quantite": 2
+        },
+        {
+            "produit_id": 3,
+            "quantite": 1
+        }
+    ]
+}

@@ -1,0 +1,9 @@
+{
+    "nom": "Test User",
+    "email": "test@example.com",
+    "password": "password123",
+    "password_confirmation": "password123",
+    "telephone": "+221779999999",
+    "role": "client",
+    "adresse": "Dakar, Sénégal"
+}

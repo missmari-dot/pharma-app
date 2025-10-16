@@ -1,0 +1,49 @@
+### Test 1: Connexion Client
+POST http://localhost:8000/api/login
+Content-Type: application/json
+
+{
+    "email": "client@pharma.sn",
+    "password": "password"
+}
+
+### Test 2: Lister les pharmacies (public)
+GET http://localhost:8000/api/pharmacies
+
+### Test 3: Lister les produits (public)
+GET http://localhost:8000/api/produits
+
+### Test 4: Rechercher des produits
+POST http://localhost:8000/api/produits/rechercher
+Content-Type: application/json
+
+{
+    "terme": "paracetamol"
+}
+
+### Test 5: Pharmacies proches
+POST http://localhost:8000/api/pharmacies/proches
+Content-Type: application/json
+
+{
+    "latitude": 14.6937,
+    "longitude": -17.4441,
+    "radius": 10
+}
+
+### Test 6: Connexion Pharmacien
+POST http://localhost:8000/api/login
+Content-Type: application/json
+
+{
+    "email": "pharmacien@pharma.sn",
+    "password": "password"
+}
+
+### Test 7: Lister ordonnances (avec token)
+GET http://localhost:8000/api/ordonnances
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### Test 8: Lister réservations (avec token)
+GET http://localhost:8000/api/reservations
+Authorization: Bearer YOUR_TOKEN_HERE

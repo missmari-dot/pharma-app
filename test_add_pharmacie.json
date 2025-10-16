@@ -1,0 +1,9 @@
+{
+    "nom_pharmacie": "Pharmacie Test",
+    "adresse_pharmacie": "Avenue Bourguiba, Dakar",
+    "telephone_pharmacie": "+221338999999",
+    "heure_ouverture": "08:00",
+    "heure_fermeture": "20:00",
+    "latitude": 14.6928,
+    "longitude": -17.4467
+}

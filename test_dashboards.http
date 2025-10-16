@@ -1,0 +1,78 @@
+### Test des Dashboards Personnalisés - Pharma App
+
+### 1. Connexion Autorité de Santé
+POST http://localhost:8000/api/login
+Content-Type: application/json
+
+{
+    "email": "autorite@sante.sn",
+    "password": "password"
+}
+
+### 2. Dashboard Autorité de Santé (avec token)
+GET http://localhost:8000/api/dashboard/autorite
+Authorization: Bearer {{token_autorite}}
+Accept: application/json
+
+### 3. Dashboard Principal Autorité (intelligent)
+GET http://localhost:8000/api/dashboard
+Authorization: Bearer {{token_autorite}}
+Accept: application/json
+
+### 4. Connexion Client
+POST http://localhost:8000/api/login
+Content-Type: application/json
+
+{
+    "email": "client@pharma.sn",
+    "password": "password"
+}
+
+### 5. Dashboard Client Spécialisé
+GET http://localhost:8000/api/dashboard/client
+Authorization: Bearer {{token_client}}
+Accept: application/json
+
+### 6. Connexion Pharmacien
+POST http://localhost:8000/api/login
+Content-Type: application/json
+
+{
+    "email": "pharmacien@pharma.sn",
+    "password": "password"
+}
+
+### 7. Dashboard Pharmacien Spécialisé
+GET http://localhost:8000/api/dashboard/pharmacien
+Authorization: Bearer {{token_pharmacien}}
+Accept: application/json
+
+### 8. Rapport de Dispensation (Autorité)
+GET http://localhost:8000/api/autorite/rapport-dispensation?date_debut=2024-01-01&date_fin=2024-12-31
+Authorization: Bearer {{token_autorite}}
+Accept: application/json
+
+### 9. Audit des Pharmacies (Autorité)
+GET http://localhost:8000/api/autorite/audit-pharmacies
+Authorization: Bearer {{token_autorite}}
+Accept: application/json
+
+### 10. Statistiques de Consommation (Autorité)
+GET http://localhost:8000/api/autorite/statistiques-consommation
+Authorization: Bearer {{token_autorite}}
+Accept: application/json
+
+### 11. Contrôle de Conformité (Autorité)
+POST http://localhost:8000/api/autorite/controle-conformite
+Authorization: Bearer {{token_autorite}}
+Content-Type: application/json
+
+{
+    "pharmacie_id": 1,
+    "type_controle": "ROUTINE"
+}
+
+### Variables pour les tests
+@token_autorite = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...
+@token_client = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...
+@token_pharmacien = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...

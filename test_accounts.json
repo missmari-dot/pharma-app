@@ -1,0 +1,49 @@
+{
+  "comptes_test": {
+    "client": {
+      "email": "client@pharma.sn",
+      "password": "password",
+      "role": "client",
+      "nom": "Fatou Sall",
+      "dashboard": "/api/dashboard/client"
+    },
+    "pharmacien": {
+      "email": "pharmacien@pharma.sn", 
+      "password": "password",
+      "role": "pharmacien",
+      "nom": "Dr. Amadou Diallo",
+      "dashboard": "/api/dashboard/pharmacien"
+    },
+    "admin": {
+      "email": "admin@pharma.sn",
+      "password": "password", 
+      "role": "admin",
+      "nom": "Admin Pharma",
+      "dashboard": "/api/admin/dashboard"
+    },
+    "autorite_sante": {
+      "email": "autorite@sante.sn",
+      "password": "password",
+      "role": "autorite_sante", 
+      "nom": "Dr. Amadou Diallo",
+      "code": "AS-SN-2024-001",
+      "dashboard": "/api/dashboard/autorite"
+    },
+    "controle_pharmacovigilance": {
+      "email": "controle@sante.sn",
+      "password": "password",
+      "role": "autorite_sante",
+      "nom": "Dr. Fatou Ndiaye", 
+      "code": "AS-SN-2024-002",
+      "dashboard": "/api/dashboard/autorite"
+    }
+  },
+  "endpoints_test": {
+    "login": "POST /api/login",
+    "dashboard_intelligent": "GET /api/dashboard",
+    "dashboard_client": "GET /api/dashboard/client",
+    "dashboard_pharmacien": "GET /api/dashboard/pharmacien", 
+    "dashboard_autorite": "GET /api/dashboard/autorite",
+    "dashboard_admin": "GET /api/admin/dashboard"
+  }
+}
