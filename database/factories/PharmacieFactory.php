@@ -9,13 +9,13 @@ class PharmacieFactory extends Factory
     public function definition(): array
     {
         return [
-            'nom' => fake()->company(),
-            'adresse' => fake()->address(),
-            'telephone' => fake()->phoneNumber(),
-            'email' => fake()->unique()->safeEmail(),
+            'nom_pharmacie' => fake()->company(),
+            'adresse_pharmacie' => fake()->address(),
+            'telephone_pharmacie' => fake()->phoneNumber(),
+            'heure_ouverture' => '08:00',
+            'heure_fermeture' => '18:00',
             'latitude' => fake()->latitude(),
             'longitude' => fake()->longitude(),
-            'horaires_ouverture' => '08:00-18:00',
             'est_de_garde' => fake()->boolean(),
         ];
     }
