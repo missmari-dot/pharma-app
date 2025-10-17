@@ -12,6 +12,7 @@ class Produit extends Model
         'prix',
         'image',
         'categorie',
+        'type_produit',
         'necessite_ordonnance',
         'stock'
     ];

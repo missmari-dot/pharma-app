@@ -75,6 +75,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Ordonnances
     Route::get('/ordonnances', [OrdonnanceController::class, 'index']);
     Route::post('/ordonnances', [OrdonnanceController::class, 'store']);
+    Route::post('/ordonnances/upload', [OrdonnanceController::class, 'uploadImage']);
     Route::get('/ordonnances/{ordonnance}', [OrdonnanceController::class, 'show']);
 
     // Réservations

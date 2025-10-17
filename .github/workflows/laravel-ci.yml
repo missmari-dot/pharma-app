@@ -1,0 +1,58 @@
+name: Laravel CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: passer123
+          MYSQL_DATABASE: pharma
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    steps:
+      - name: 🧾 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🧱 Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, bcmath, intl, pdo, pdo_mysql
+          coverage: none
+
+      - name: 📦 Install dependencies
+        run: composer install --no-progress --prefer-dist --optimize-autoloader
+
+      - name: ⚙️ Copy .env
+        run: cp .env.example .env
+
+      - name: 🔑 Generate application key
+        run: php artisan key:generate
+
+      - name: 🧩 Run migrations
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: pharma
+          DB_USERNAME: root
+          DB_PASSWORD: passer123
+        run: php artisan migrate --force
+
+      - name: ✅ Run tests
+        run: php artisan test

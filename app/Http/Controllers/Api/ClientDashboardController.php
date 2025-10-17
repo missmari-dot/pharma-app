@@ -23,12 +23,27 @@ class ClientDashboardController extends Controller
                 'telephone' => $client->telephone,
                 'membre_depuis' => $client->created_at->diffForHumans()
             ],
-            'sante_personnelle' => $this->getSantePersonnelle($client),
-            'ordonnances' => $this->getOrdonnancesData($client),
-            'reservations' => $this->getReservationsData($client),
-            'pharmacies_favorites' => $this->getPharmaciesFavorites($client),
-            'conseils_sante' => $this->getConseilsSante(),
-            'activites_recentes' => $this->getActivitesRecentes($client),
+            'resume_sante' => [
+                'ordonnances_actives' => Ordonnance::where('client_id', $client->id)
+                    ->where('statut', 'VALIDEE')
+                    ->whereHas('reservation', function($q) {
+                        $q->where('statut', 'ACTIVE');
+                    })->count(),
+                'reservations_en_attente' => Reservation::where('client_id', $client->id)
+                    ->where('statut', 'ACTIVE')->count(),
+                'prochains_renouvellements' => $this->getProchainRenouvellements($client)->count()
+            ],
+            'activites_recentes' => [
+                'ordonnances_recentes' => Ordonnance::where('client_id', $client->id)
+                    ->with('pharmacie:id,nom_pharmacie')
+                    ->latest()->limit(3)->get(['id', 'pharmacie_id', 'statut', 'created_at']),
+                'reservations_recentes' => Reservation::where('client_id', $client->id)
+                    ->with('pharmacie:id,nom_pharmacie')
+                    ->latest()->limit(3)->get(['id', 'pharmacie_id', 'statut', 'created_at'])
+            ],
+            'conseils_sante_personnalises' => $this->getConseilsSante(),
+            'pharmacies_de_garde' => Pharmacie::where('est_de_garde', true)
+                ->limit(2)->get(['nom_pharmacie', 'adresse_pharmacie', 'telephone_pharmacie']),
             'notifications_non_lues' => $this->getNotificationsNonLues($client)
         ];
 
@@ -91,7 +106,7 @@ class ClientDashboardController extends Controller
     {
         return \DB::table('conseil_santes')
             ->latest()
-            ->limit(3)
+            ->limit(2)
             ->get(['titre', 'contenu', 'categorie', 'created_at']);
     }
 

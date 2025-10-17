@@ -42,13 +42,13 @@ class PharmacienProduitController extends Controller
     {
         $validated = $request->validate([
             'nom_produit' => 'required|string',
+            'description' => 'nullable|string',
             'prix' => 'required|numeric|min:0',
             'type_produit' => 'required|in:MEDICAMENT,PARAPHARMACIE',
-            'quantite_disponible' => 'required|integer|min:0'
+            'quantite_disponible' => 'required|integer|min:0',
+            'necessite_ordonnance' => 'sometimes|boolean'
         ]);
         
-        $validated['categorie'] = $validated['type_produit'] === 'MEDICAMENT' ? 'Médicament' : 'Parapharmacie';
-
         $pharmacien = $request->user()->pharmacien;
         if (!$pharmacien) {
             return response()->json(['error' => 'Profil pharmacien non trouvé'], 404);
@@ -59,17 +59,23 @@ class PharmacienProduitController extends Controller
             return response()->json(['error' => 'Aucune pharmacie associée'], 404);
         }
 
+        // Créer le produit avec tous les champs
         $produit = Produit::create([
             'nom_produit' => $validated['nom_produit'],
+            'description' => $validated['description'] ?? null,
             'prix' => $validated['prix'],
             'type_produit' => $validated['type_produit'],
-            'categorie' => $validated['categorie']
+            'categorie' => $validated['type_produit'] === 'MEDICAMENT' ? 'Médicament' : 'Parapharmacie',
+            'necessite_ordonnance' => $validated['necessite_ordonnance'] ?? false
         ]);
         
+        // Associer à la pharmacie
         $pharmacie->produits()->attach($produit->id, [
             'quantite_disponible' => $validated['quantite_disponible']
         ]);
 
+        // Retourner le produit avec le stock
+        $produit->stock = $validated['quantite_disponible'];
         return response()->json($produit, 201);
     }
 

@@ -56,6 +56,7 @@ class ReservationController extends Controller
         $validated = $request->validate([
             'pharmacie_id' => 'required|exists:pharmacies,id',
             'ordonnance_id' => 'nullable|exists:ordonnances,id',
+            'ordonnance_image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'lignes_reservation' => 'required|array|min:1',
             'lignes_reservation.*.produit_id' => 'required|exists:produits,id',
             'lignes_reservation.*.quantite' => 'required|integer|min:1'
@@ -72,6 +73,19 @@ class ReservationController extends Controller
                 return response()->json(['error' => 'Accès refusé'], 403);
             }
         }
+        
+        // Créer une ordonnance si image fournie
+        if ($request->hasFile('ordonnance_image')) {
+            $imagePath = $request->file('ordonnance_image')->store('ordonnances', 'public');
+            
+            $ordonnance = Ordonnance::create([
+                'client_id' => $request->user()->client->id,
+                'pharmacie_id' => $validated['pharmacie_id'],
+                'image_ordonnance' => $imagePath,
+                'statut' => 'EN_ATTENTE',
+                'date_prescription' => now()
+            ]);
+        }
 
         // Vérifier les produits et ordonnances requises
         $pharmacie = \App\Models\Pharmacie::find($validated['pharmacie_id']);
@@ -81,7 +95,8 @@ class ReservationController extends Controller
             // Vérifier si ordonnance requise
             if ($produit->necessite_ordonnance && !$ordonnance) {
                 return response()->json([
-                    'error' => "Le produit {$produit->nom_produit} nécessite une ordonnance"
+                    'error' => "Le produit {$produit->nom_produit} nécessite une ordonnance",
+                    'requires_prescription' => true
                 ], 400);
             }
             
@@ -98,9 +113,9 @@ class ReservationController extends Controller
         $reservation = Reservation::create([
             'client_id' => $request->user()->client->id,
             'pharmacie_id' => $validated['pharmacie_id'],
-            'ordonnance_id' => $validated['ordonnance_id'],
+            'ordonnance_id' => $ordonnance ? $ordonnance->id : null,
             'date_reservation' => now(),
-            'statut' => 'en_attente',
+            'statut' => $ordonnance && $ordonnance->statut === 'EN_ATTENTE' ? 'en_attente_validation' : 'en_attente',
             'montant_total' => 0
         ]);
 

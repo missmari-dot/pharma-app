@@ -69,6 +69,38 @@ class OrdonnanceController extends Controller
         return $ordonnance->load(['client', 'pharmacie', 'reservation']);
     }
 
+    public function uploadImage(Request $request)
+    {
+        $validated = $request->validate([
+            'pharmacie_id' => 'required|exists:pharmacies,id',
+            'ordonnance_image' => 'required|image|mimes:jpeg,png,jpg|max:2048'
+        ]);
+
+        if ($request->user()->role !== 'client') {
+            return response()->json(['message' => 'Seuls les clients peuvent envoyer des ordonnances'], 403);
+        }
+
+        $client = $request->user()->client;
+        if (!$client) {
+            return response()->json(['message' => 'Profil client non trouvé'], 404);
+        }
+
+        $imagePath = $request->file('ordonnance_image')->store('ordonnances', 'public');
+
+        $ordonnance = Ordonnance::create([
+            'client_id' => $client->id,
+            'pharmacie_id' => $validated['pharmacie_id'],
+            'image_ordonnance' => $imagePath,
+            'statut' => 'EN_ATTENTE',
+            'date_prescription' => now()
+        ]);
+
+        return response()->json([
+            'message' => 'Ordonnance uploadée avec succès',
+            'ordonnance' => $ordonnance
+        ], 201);
+    }
+
     public function valider(Request $request, Ordonnance $ordonnance)
     {
         if ($request->user()->role !== 'pharmacien') {
