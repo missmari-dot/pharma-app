@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('client_id')->constrained('clients')->onDelete('cascade');
             $table->foreignId('pharmacie_id')->constrained()->onDelete('cascade');
             $table->string('photo_url');
-            $table->enum('statut', ['en_attente', 'validee', 'rejetee'])->default('en_attente');
+            $table->enum('statut', ['en_attente', 'envoyee', 'validee', 'rejetee'])->default('en_attente');
             $table->date('date_envoi');
             $table->timestamps();
         });
