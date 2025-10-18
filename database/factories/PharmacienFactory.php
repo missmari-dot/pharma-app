@@ -10,8 +10,7 @@ class PharmacienFactory extends Factory
     {
         return [
             'user_id' => \App\Models\User::factory(),
-            'numero_ordre' => fake()->unique()->numerify('######'),
-            'specialite' => fake()->randomElement(['Pharmacie clinique', 'Pharmacie hospitalière', 'Pharmacie industrielle']),
+            'pharmacies_associees' => '',
         ];
     }
 }
