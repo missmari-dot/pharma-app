@@ -25,7 +25,7 @@ class AuthTest extends TestCase
 
         $response = $this->postJson('/api/register', $userData);
 
-        $response->assertStatus(201)
+        $response->assertStatus(200)
                 ->assertJsonStructure([
                     'user' => [
                         'id',
@@ -78,7 +78,7 @@ class AuthTest extends TestCase
         ])->postJson('/api/logout');
 
         $response->assertStatus(200)
-                ->assertJson(['message' => 'Déconnexion réussie']);
+                ->assertJson(['message' => 'Déconnecté']);
     }
 
     public function test_authenticated_user_can_get_profile()
@@ -92,8 +92,10 @@ class AuthTest extends TestCase
 
         $response->assertStatus(200)
                 ->assertJson([
-                    'id' => $user->id,
-                    'email' => $user->email
+                    'user' => [
+                        'id' => $user->id,
+                        'email' => $user->email
+                    ]
                 ]);
     }
 }

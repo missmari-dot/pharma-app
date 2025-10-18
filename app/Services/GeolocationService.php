@@ -19,12 +19,10 @@ class GeolocationService
 
     public function findNearbyPharmacies($latitude, $longitude, $radius = 10)
     {
-        return \App\Models\Pharmacie::selectRaw("*, 
-            (6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))) AS distance", 
-            [$latitude, $longitude, $latitude])
-            ->having('distance', '<', $radius)
-            ->orderBy('distance')
-            ->get();
+        return \App\Models\Pharmacie::whereRaw(
+            "(6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))) < ?",
+            [$latitude, $longitude, $latitude, $radius]
+        )->get();
     }
 
     public function geocodeWithOpenStreetMap($address)

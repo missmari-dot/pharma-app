@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Ordonnance extends Model
 {
     use HasFactory;
-{
+
     protected $fillable = [
         'client_id',
         'pharmacie_id',

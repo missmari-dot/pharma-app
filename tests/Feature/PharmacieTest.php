@@ -43,7 +43,7 @@ class PharmacieTest extends TestCase
         Pharmacie::factory()->create(['est_de_garde' => true]);
         Pharmacie::factory()->create(['est_de_garde' => false]);
 
-        $response = $this->getJson('/api/pharmacies/garde');
+        $response = $this->getJson('/api/pharmacies/de-garde');
 
         $response->assertStatus(200)
                 ->assertJsonCount(1);
@@ -54,6 +54,8 @@ class PharmacieTest extends TestCase
         $user = User::factory()->create(['role' => 'pharmacien']);
         $token = $user->createToken('test-token')->plainTextToken;
 
+        $pharmacien = \App\Models\Pharmacien::factory()->create(['user_id' => $user->id]);
+        
         $pharmacieData = [
             'nom_pharmacie' => 'Pharmacie Test',
             'adresse_pharmacie' => 'Test Address',
@@ -61,7 +63,8 @@ class PharmacieTest extends TestCase
             'heure_ouverture' => '08:00',
             'heure_fermeture' => '20:00',
             'latitude' => 14.6937,
-            'longitude' => -17.4441
+            'longitude' => -17.4441,
+            'pharmacien_id' => $pharmacien->id
         ];
 
         $response = $this->withHeaders([
