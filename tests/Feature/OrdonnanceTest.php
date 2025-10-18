@@ -25,7 +25,7 @@ class OrdonnanceTest extends TestCase
 
         $token = $user->createToken('test-token')->plainTextToken;
 
-        $file = UploadedFile::fake()->image('ordonnance.jpg');
+        $file = UploadedFile::fake()->create('ordonnance.jpg', 100, 'image/jpeg');
 
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $token
@@ -48,7 +48,7 @@ class OrdonnanceTest extends TestCase
         $this->assertDatabaseHas('ordonnances', [
             'client_id' => $client->id,
             'pharmacie_id' => $pharmacie->id,
-            'statut' => 'ENVOYEE'
+            'statut' => 'envoyee'
         ]);
     }
 
@@ -58,7 +58,7 @@ class OrdonnanceTest extends TestCase
         $pharmacie = Pharmacie::factory()->create();
         $ordonnance = Ordonnance::factory()->create([
             'pharmacie_id' => $pharmacie->id,
-            'statut' => 'ENVOYEE'
+            'statut' => 'envoyee'
         ]);
 
         $token = $pharmacien->createToken('test-token')->plainTextToken;
@@ -74,7 +74,7 @@ class OrdonnanceTest extends TestCase
 
         $this->assertDatabaseHas('ordonnances', [
             'id' => $ordonnance->id,
-            'statut' => 'VALIDEE'
+            'statut' => 'validee'
         ]);
     }
 
@@ -84,7 +84,7 @@ class OrdonnanceTest extends TestCase
         $pharmacie = Pharmacie::factory()->create();
         $ordonnance = Ordonnance::factory()->create([
             'pharmacie_id' => $pharmacie->id,
-            'statut' => 'ENVOYEE'
+            'statut' => 'envoyee'
         ]);
 
         $token = $pharmacien->createToken('test-token')->plainTextToken;
@@ -100,7 +100,7 @@ class OrdonnanceTest extends TestCase
 
         $this->assertDatabaseHas('ordonnances', [
             'id' => $ordonnance->id,
-            'statut' => 'REJETEE'
+            'statut' => 'rejetee'
         ]);
     }
 

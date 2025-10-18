@@ -165,13 +165,32 @@ class PharmacieController extends Controller
             });
         }
         
+        // For SQLite compatibility, avoid using SQL distance functions
+        $pharmacies = $query->with(['pharmacien', 'produits'])->get();
+        
         if ($latitude && $longitude) {
-            $query->selectRaw("*, 
-                (6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))) AS distance", 
-                [$latitude, $longitude, $latitude])
-                ->orderBy('distance');
+            $geolocationService = new \App\Services\GeolocationService();
+            $pharmaciesWithDistance = [];
+            
+            foreach ($pharmacies as $pharmacie) {
+                if ($pharmacie->latitude && $pharmacie->longitude) {
+                    $distance = $geolocationService->calculateDistance(
+                        $latitude, $longitude, 
+                        $pharmacie->latitude, $pharmacie->longitude
+                    );
+                    $pharmacie->distance = round($distance, 2);
+                }
+                $pharmaciesWithDistance[] = $pharmacie;
+            }
+            
+            // Sort by distance if coordinates provided
+            usort($pharmaciesWithDistance, function($a, $b) {
+                return ($a->distance ?? 999) <=> ($b->distance ?? 999);
+            });
+            
+            return response()->json($pharmaciesWithDistance);
         }
         
-        return $query->with(['pharmacien', 'produits'])->get();
+        return response()->json($pharmacies);
     }
 }

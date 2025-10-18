@@ -19,10 +19,33 @@ class GeolocationService
 
     public function findNearbyPharmacies($latitude, $longitude, $radius = 10)
     {
-        return \App\Models\Pharmacie::whereRaw(
-            "(6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))) < ?",
-            [$latitude, $longitude, $latitude, $radius]
-        )->get();
+        // Get all pharmacies with coordinates and calculate distance in PHP for SQLite compatibility
+        $pharmacies = \App\Models\Pharmacie::whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->get();
+            
+        $nearbyPharmacies = [];
+        
+        foreach ($pharmacies as $pharmacie) {
+            $distance = $this->calculateDistance(
+                $latitude, 
+                $longitude, 
+                $pharmacie->latitude, 
+                $pharmacie->longitude
+            );
+            
+            if ($distance <= $radius) {
+                $pharmacie->distance = round($distance, 2);
+                $nearbyPharmacies[] = $pharmacie;
+            }
+        }
+        
+        // Sort by distance
+        usort($nearbyPharmacies, function($a, $b) {
+            return $a->distance <=> $b->distance;
+        });
+        
+        return collect($nearbyPharmacies);
     }
 
     public function geocodeWithOpenStreetMap($address)
