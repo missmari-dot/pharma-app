@@ -17,6 +17,7 @@ class PharmacieFactory extends Factory
             'latitude' => fake()->latitude(),
             'longitude' => fake()->longitude(),
             'est_de_garde' => fake()->boolean(),
+            'pharmacien_id' => \App\Models\Pharmacien::factory(),
         ];
     }
 }

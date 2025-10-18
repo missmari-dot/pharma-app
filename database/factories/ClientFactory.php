@@ -9,10 +9,7 @@ class ClientFactory extends Factory
     public function definition(): array
     {
         return [
-            'nom' => fake()->lastName(),
-            'prenom' => fake()->firstName(),
-            'email' => fake()->unique()->safeEmail(),
-            'telephone' => fake()->unique()->phoneNumber(),
+            'user_id' => \App\Models\User::factory(),
             'adresse' => fake()->address(),
             'date_naissance' => fake()->date(),
         ];
