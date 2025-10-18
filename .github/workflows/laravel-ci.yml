@@ -58,14 +58,13 @@ jobs:
         run: php artisan test --testsuite=Unit
 
       - name: 📊 SonarCloud Scan
-        if: env.SONAR_TOKEN != ''
-        uses: SonarSource/sonarcloud-github-action@master
+        uses: SonarSource/sonarqube-scan-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
-            -Dsonar.projectKey=pharma-app
-            -Dsonar.organization=pharma-app
+            -Dsonar.projectKey=missmari-dot_pharma-app
+            -Dsonar.organization=missmari-dot
             -Dsonar.sources=app,resources,routes
             -Dsonar.exclusions=vendor/**,storage/**,bootstrap/cache/**
