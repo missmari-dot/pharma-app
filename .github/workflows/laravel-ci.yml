@@ -56,3 +56,17 @@ jobs:
 
       - name: ✅ Run tests
         run: php artisan test --testsuite=Unit
+
+      - name: 📊 SonarQube Analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          if [ "${{ secrets.SONAR_TOKEN }}" != "" ]; then
+            sonar-scanner \
+              -Dsonar.projectKey=pharma-app \
+              -Dsonar.sources=app,resources,routes \
+              -Dsonar.host.url=https://sonarcloud.io \
+              -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+          else
+            echo "SonarQube analysis skipped - no token provided"
+          fi
