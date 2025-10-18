@@ -49,7 +49,7 @@ class OrdonnanceController extends Controller
             'client_id' => $client->id,
             'pharmacie_id' => $validated['pharmacie_id'],
             'photo_url' => $photoPath,
-            'statut' => 'ENVOYEE',
+            'statut' => 'envoyee',
             'date_envoi' => now(),
             'commentaire' => $validated['commentaire'] ?? null
         ]);
@@ -91,7 +91,7 @@ class OrdonnanceController extends Controller
             'client_id' => $client->id,
             'pharmacie_id' => $validated['pharmacie_id'],
             'image_ordonnance' => $imagePath,
-            'statut' => 'EN_ATTENTE',
+            'statut' => 'en_attente',
             'date_prescription' => now()
         ]);
 
@@ -112,7 +112,7 @@ class OrdonnanceController extends Controller
         ]);
 
         $ordonnance->update([
-            'statut' => 'VALIDEE',
+            'statut' => 'validee',
             'date_traitement' => now(),
             'remarque_pharmacien' => $validated['remarque_pharmacien'] ?? null
         ]);
@@ -138,7 +138,7 @@ class OrdonnanceController extends Controller
         ]);
 
         $ordonnance->update([
-            'statut' => 'REJETEE',
+            'statut' => 'rejetee',
             'date_traitement' => now(),
             'commentaire' => $validated['commentaire']
         ]);

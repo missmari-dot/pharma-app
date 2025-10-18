@@ -19,7 +19,7 @@ Route::post('/pharmacien/register', [\App\Http\Controllers\Auth\PharmacienRegist
 Route::get('/pharmacies', [PharmacieController::class, 'index']);
 Route::get('/pharmacies/{pharmacie}', [PharmacieController::class, 'show']);
 Route::post('/pharmacies/proches', [PharmacieController::class, 'pharmaciesProches']);
-Route::get('/pharmacies/garde', [PharmacieController::class, 'pharmaciesDeGarde']);
+Route::get('/pharmacies/de-garde', [PharmacieController::class, 'pharmaciesDeGarde']);
 Route::post('/geocode', [PharmacieController::class, 'geocodeAddress']);
 
 // Routes publiques produits

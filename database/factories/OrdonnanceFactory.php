@@ -12,7 +12,7 @@ class OrdonnanceFactory extends Factory
             'client_id' => \App\Models\Client::factory(),
             'pharmacie_id' => \App\Models\Pharmacie::factory(),
             'photo_url' => 'ordonnances/test.jpg',
-            'statut' => 'en_attente',
+            'statut' => 'envoyee',
             'date_envoi' => fake()->date(),
         ];
     }
