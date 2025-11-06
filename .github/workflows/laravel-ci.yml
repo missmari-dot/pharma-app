@@ -33,11 +33,17 @@ jobs:
         run: php artisan key:generate
 
       - name: 🗄️ Set up database
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: database/database.sqlite
         run: |
           touch database/database.sqlite
           php artisan migrate --force
 
       - name: ✅ Run tests with coverage
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: database/database.sqlite
         run: php artisan test --coverage-clover=coverage.xml
         continue-on-error: true
 
