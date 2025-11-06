@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('client_id')->constrained('clients')->onDelete('cascade');
             $table->foreignId('pharmacie_id')->constrained()->onDelete('cascade');
             $table->dateTime('date_reservation');
-            $table->enum('statut', ['en_attente', 'confirmee', 'prete', 'recuperee', 'validee', 'annulee'])->default('en_attente');
+            $table->enum('statut', ['en_attente', 'confirmee', 'prete', 'recuperee', 'validee', 'annulee', 'expire', 'en_attente_validation'])->default('en_attente');
             $table->string('code_retrait', 8)->unique()->nullable();
             $table->decimal('montant_total', 10, 2)->default(0);
             $table->timestamps();
