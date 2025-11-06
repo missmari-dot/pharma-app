@@ -7,33 +7,21 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
-
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: passer123
-          MYSQL_DATABASE: pharma
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping --silent"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
 
     steps:
       - name: 🧾 Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: 🧱 Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          extensions: mbstring, bcmath, intl, pdo, pdo_mysql
-          coverage: none
+          extensions: mbstring, xml, bcmath, curl, dom, gd, json, pdo_sqlite
+          coverage: xdebug
 
       - name: 📦 Install dependencies
         run: composer install --no-progress --prefer-dist --optimize-autoloader
@@ -44,27 +32,17 @@ jobs:
       - name: 🔑 Generate application key
         run: php artisan key:generate
 
-      - name: 🧩 Run migrations
-        env:
-          DB_CONNECTION: mysql
-          DB_HOST: 127.0.0.1
-          DB_PORT: 3306
-          DB_DATABASE: pharma
-          DB_USERNAME: root
-          DB_PASSWORD: passer123
-        run: php artisan migrate:fresh --force
+      - name: 🗄️ Set up database
+        run: |
+          touch database/database.sqlite
+          php artisan migrate --force
 
-      - name: ✅ Run tests
-        run: php artisan test --testsuite=Unit || true
+      - name: ✅ Run tests with coverage
+        run: php artisan test --coverage-clover=coverage.xml
+        continue-on-error: true
 
       - name: 📊 SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@master
+        uses: SonarSource/sonarcloud-github-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          args: >
-            -Dsonar.projectKey=missmari-dot_pharma-app
-            -Dsonar.organization=missmari-dot
-            -Dsonar.sources=app,resources,routes
-            -Dsonar.exclusions=vendor/**,storage/**,bootstrap/cache/**
