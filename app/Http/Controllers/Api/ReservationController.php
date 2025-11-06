@@ -10,12 +10,18 @@ use Illuminate\Support\Facades\DB;
 
 class ReservationController extends Controller
 {
+    // Lister les réservations
     public function index(Request $request)
     {
         $query = Reservation::with(['client', 'pharmacie', 'ordonnance', 'lignesReservation.produit']);
 
         if ($request->user()->role === 'client') {
             $query->where('client_id', $request->user()->client->id);
+        } elseif ($request->user()->role === 'pharmacien') {
+            $pharmacien = $request->user()->pharmacien;
+            if ($pharmacien && $pharmacien->pharmacies->count() > 0) {
+                $query->whereIn('pharmacie_id', $pharmacien->pharmacies->pluck('id'));
+            }
         }
 
         // Filtrer par statut si fourni
@@ -46,7 +52,8 @@ class ReservationController extends Controller
                         'sous_total' => $ligne->getSousTotal()
                     ];
                 }),
-                'ordonnance_id' => $reservation->ordonnance_id
+                'ordonnance_id' => $reservation->ordonnance_id,
+                'code_retrait' => $reservation->code_retrait
             ];
         });
     }
@@ -57,14 +64,20 @@ class ReservationController extends Controller
             'pharmacie_id' => 'required|exists:pharmacies,id',
             'ordonnance_id' => 'nullable|exists:ordonnances,id',
             'ordonnance_image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-            'lignes_reservation' => 'required|array|min:1',
-            'lignes_reservation.*.produit_id' => 'required|exists:produits,id',
-            'lignes_reservation.*.quantite' => 'required|integer|min:1'
+            'lignes_reservation' => 'nullable|array|min:1',
+            'lignes_reservation.*.produit_id' => 'required_with:lignes_reservation|exists:produits,id',
+            'lignes_reservation.*.quantite' => 'required_with:lignes_reservation|integer|min:1'
         ]);
+
+        // Vérifier que la pharmacie est validée
+        $pharmacie = \App\Models\Pharmacie::find($validated['pharmacie_id']);
+        if ($pharmacie->statut_validation !== 'approved') {
+            return response()->json(['message' => 'Cette pharmacie n\'est pas encore validée'], 403);
+        }
 
         // Vérifier l'ordonnance si fournie
         $ordonnance = null;
-        if ($validated['ordonnance_id']) {
+        if (!empty($validated['ordonnance_id'])) {
             $ordonnance = Ordonnance::find($validated['ordonnance_id']);
             if ($ordonnance->statut !== 'VALIDEE') {
                 return response()->json(['error' => 'Ordonnance non validée'], 400);
@@ -73,25 +86,49 @@ class ReservationController extends Controller
                 return response()->json(['error' => 'Accès refusé'], 403);
             }
         }
-        
+
         // Créer une ordonnance si image fournie
         if ($request->hasFile('ordonnance_image')) {
             $imagePath = $request->file('ordonnance_image')->store('ordonnances', 'public');
-            
+
             $ordonnance = Ordonnance::create([
                 'client_id' => $request->user()->client->id,
                 'pharmacie_id' => $validated['pharmacie_id'],
-                'image_ordonnance' => $imagePath,
-                'statut' => 'EN_ATTENTE',
-                'date_prescription' => now()
+                'photo_url' => $imagePath,
+                'statut' => 'en_attente',
+                'date_envoi' => now()
             ]);
+        }
+
+        // Si pas de lignes de réservation, créer une réservation en attente de traitement par le pharmacien
+        if (!isset($validated['lignes_reservation']) || empty($validated['lignes_reservation'])) {
+            if (!$ordonnance) {
+                return response()->json([
+                    'error' => 'Une ordonnance est requise pour une réservation sans médicaments spécifiés'
+                ], 400);
+            }
+
+            $reservation = Reservation::create([
+                'client_id' => $request->user()->client->id,
+                'pharmacie_id' => $validated['pharmacie_id'],
+                'ordonnance_id' => $ordonnance->id,
+                'date_reservation' => now(),
+                'statut' => 'en_attente_validation',
+                'montant_total' => 0,
+                'code_retrait' => Reservation::genererCodeRetrait()
+            ]);
+
+            return response()->json([
+                'message' => 'Réservation créée. Le pharmacien va analyser votre ordonnance et sélectionner les médicaments.',
+                'reservation' => $reservation->load(['ordonnance', 'pharmacie'])
+            ], 201);
         }
 
         // Vérifier les produits et ordonnances requises
         $pharmacie = \App\Models\Pharmacie::find($validated['pharmacie_id']);
         foreach ($validated['lignes_reservation'] as $ligne) {
             $produit = \App\Models\Produit::find($ligne['produit_id']);
-            
+
             // Vérifier si ordonnance requise
             if ($produit->necessite_ordonnance && !$ordonnance) {
                 return response()->json([
@@ -99,7 +136,7 @@ class ReservationController extends Controller
                     'requires_prescription' => true
                 ], 400);
             }
-            
+
             // Vérifier le stock
             $stockPharmacie = $pharmacie->produits()->where('produit_id', $ligne['produit_id'])->first();
             if (!$stockPharmacie || $stockPharmacie->pivot->quantite_disponible < $ligne['quantite']) {
@@ -116,25 +153,28 @@ class ReservationController extends Controller
             'ordonnance_id' => $ordonnance ? $ordonnance->id : null,
             'date_reservation' => now(),
             'statut' => $ordonnance && $ordonnance->statut === 'EN_ATTENTE' ? 'en_attente_validation' : 'en_attente',
-            'montant_total' => 0
+            'montant_total' => 0,
+            'code_retrait' => Reservation::genererCodeRetrait()
         ]);
 
         // Créer les lignes de réservation
         $montantTotal = 0;
-        foreach ($validated['lignes_reservation'] as $ligne) {
-            $produit = \App\Models\Produit::find($ligne['produit_id']);
-            $ligneReservation = $reservation->lignesReservation()->create([
-                'produit_id' => $ligne['produit_id'],
-                'quantite_reservee' => $ligne['quantite'],
-                'prix_unitaire' => $produit->prix
-            ]);
+        if (isset($validated['lignes_reservation'])) {
+            foreach ($validated['lignes_reservation'] as $ligne) {
+                $produit = \App\Models\Produit::find($ligne['produit_id']);
+                $ligneReservation = $reservation->lignesReservation()->create([
+                    'produit_id' => $ligne['produit_id'],
+                    'quantite_reservee' => $ligne['quantite'],
+                    'prix_unitaire' => $produit->prix
+                ]);
 
-            $montantTotal += $ligneReservation->getSousTotal();
+                $montantTotal += $ligneReservation->getSousTotal();
 
-            // Réserver le stock
-            $pharmacie->produits()->updateExistingPivot($ligne['produit_id'], [
-                'quantite_disponible' => DB::raw("quantite_disponible - {$ligne['quantite']}")
-            ]);
+                // Réserver le stock
+                $pharmacie->produits()->updateExistingPivot($ligne['produit_id'], [
+                    'quantite_disponible' => DB::raw("quantite_disponible - {$ligne['quantite']}")
+                ]);
+            }
         }
 
         // Mettre à jour le montant total
@@ -169,15 +209,44 @@ class ReservationController extends Controller
 
         $reservation->update(['statut' => 'confirmee']);
 
-        // Libérer le stock réservé
-        foreach ($reservation->lignesReservation as $ligne) {
-            $reservation->pharmacie->produits()->updateExistingPivot($ligne->produit_id, [
-                'quantite_disponible' => DB::raw("quantite_disponible + {$ligne->quantite_reservee}")
-            ]);
-        }
-
         return response()->json([
             'message' => 'Retrait confirmé avec succès',
+            'reservation' => $reservation->load(['client', 'pharmacie', 'lignesReservation.produit'])
+        ]);
+    }
+
+    public function validerRetraitParCode(Request $request)
+    {
+        $validated = $request->validate([
+            'code_retrait' => 'required|string|size:8'
+        ]);
+
+        if ($request->user()->role !== 'pharmacien') {
+            return response()->json(['message' => 'Accès refusé'], 403);
+        }
+
+        $pharmacien = $request->user()->pharmacien;
+        $reservation = Reservation::where('code_retrait', $validated['code_retrait'])
+            ->whereIn('pharmacie_id', $pharmacien->pharmacies->pluck('id'))
+            ->first();
+
+        if (!$reservation) {
+            return response()->json(['error' => 'Code de retrait invalide'], 404);
+        }
+
+        if (!in_array($reservation->statut, ['en_attente'])) {
+            return response()->json(['error' => 'Cette réservation ne peut pas être retirée'], 400);
+        }
+
+        if ($reservation->estExpiree()) {
+            $reservation->marquerCommeExpiree();
+            return response()->json(['error' => 'Cette réservation a expiré'], 400);
+        }
+
+        $reservation->update(['statut' => 'retiree']);
+
+        return response()->json([
+            'message' => 'Produits retirés avec succès',
             'reservation' => $reservation->load(['client', 'pharmacie', 'lignesReservation.produit'])
         ]);
     }
@@ -194,8 +263,8 @@ class ReservationController extends Controller
             return response()->json(['message' => 'Accès refusé'], 403);
         }
 
-        if ($reservation->statut !== 'confirmee') {
-            return response()->json(['error' => 'La réservation doit être confirmée avant validation'], 400);
+        if (!in_array($reservation->statut, ['confirmee', 'retiree'])) {
+            return response()->json(['error' => 'La réservation doit être confirmée ou retirée avant validation'], 400);
         }
 
         $reservation->update(['statut' => 'validee']);

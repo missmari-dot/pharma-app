@@ -14,7 +14,8 @@ class Ordonnance extends Model
         'pharmacie_id',
         'photo_url',
         'statut',
-        'date_envoi'
+        'date_envoi',
+        'commentaire'
     ];
 
     protected $casts = [
@@ -34,6 +35,18 @@ class Ordonnance extends Model
     public function reservation()
     {
         return $this->hasOne(Reservation::class);
+    }
+
+    public function lignesOrdonnance()
+    {
+        return $this->hasMany(LigneOrdonnance::class);
+    }
+
+    public function produits()
+    {
+        return $this->belongsToMany(Produit::class, 'ligne_ordonnances')
+            ->withPivot('quantite_prescrite', 'dosage', 'instructions', 'statut', 'remarque_pharmacien')
+            ->withTimestamps();
     }
 
     public function genererReservation()

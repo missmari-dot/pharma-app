@@ -31,6 +31,15 @@ class NotificationService
             'type' => 'ordonnance_validee',
             'data' => ['ordonnance_id' => $ordonnance->id]
         ]);
+
+        // Envoyer SMS si numéro disponible
+        if ($client->user->telephone) {
+            $smsService = new SmsService();
+            $smsService->smsOrdonnanceValidee(
+                $client->user->telephone,
+                $ordonnance->pharmacie->nom_pharmacie
+            );
+        }
     }
 
     public function notifierOrdonnanceRejetee(Ordonnance $ordonnance)
@@ -43,6 +52,16 @@ class NotificationService
             'type' => 'ordonnance_rejetee',
             'data' => ['ordonnance_id' => $ordonnance->id]
         ]);
+
+        // Envoyer SMS si numéro disponible
+        if ($client->user->telephone) {
+            $smsService = new SmsService();
+            $smsService->smsOrdonnanceRejetee(
+                $client->user->telephone,
+                $ordonnance->pharmacie->nom_pharmacie,
+                $ordonnance->commentaire
+            );
+        }
     }
 
     public function notifierReservationPrete(Reservation $reservation)
@@ -55,6 +74,16 @@ class NotificationService
             'type' => 'reservation_prete',
             'data' => ['reservation_id' => $reservation->id]
         ]);
+
+        // Envoyer SMS si numéro disponible
+        if ($client->user->telephone) {
+            $smsService = new SmsService();
+            $smsService->smsReservationPrete(
+                $client->user->telephone,
+                $reservation->code_retrait,
+                $reservation->pharmacie->nom_pharmacie
+            );
+        }
     }
 
     public function alerteStockFaible($produit, $pharmacie)

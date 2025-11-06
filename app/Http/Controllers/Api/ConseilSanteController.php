@@ -100,4 +100,18 @@ class ConseilSanteController extends Controller
         $conseilSante->delete();
         return response()->json(['message' => 'Conseil supprimé avec succès']);
     }
+
+    public function mesConseils(Request $request)
+    {
+        $pharmacien = $request->user()->pharmacien;
+        if (!$pharmacien) {
+            return response()->json(['message' => 'Profil pharmacien non trouvé'], 404);
+        }
+
+        $conseils = ConseilSante::where('pharmacien_id', $pharmacien->id)
+            ->orderBy('date_publication', 'desc')
+            ->paginate($request->get('per_page', 15));
+
+        return $conseils;
+    }
 }

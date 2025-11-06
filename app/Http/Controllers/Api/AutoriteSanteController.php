@@ -72,4 +72,67 @@ class AutoriteSanteController extends Controller
 
         return response()->json(['message' => 'Contrôle enregistré']);
     }
+
+    public function bloquerPharmacie(Request $request, Pharmacie $pharmacie)
+    {
+        $validated = $request->validate([
+            'motif' => 'required|string|max:500'
+        ]);
+
+        $pharmacie->update([
+            'statut_activite' => 'bloquee',
+            'motif_sanction' => $validated['motif'],
+            'date_sanction' => now(),
+            'sanctionnee_par' => $request->user()->id
+        ]);
+
+        return response()->json([
+            'message' => 'Pharmacie bloquée avec succès',
+            'pharmacie' => $pharmacie
+        ]);
+    }
+
+    public function suspendrePharmacie(Request $request, Pharmacie $pharmacie)
+    {
+        $validated = $request->validate([
+            'motif' => 'required|string|max:500',
+            'duree_jours' => 'required|integer|min:1|max:365'
+        ]);
+
+        $pharmacie->update([
+            'statut_activite' => 'suspendue',
+            'motif_sanction' => $validated['motif'],
+            'date_sanction' => now(),
+            'date_fin_sanction' => now()->addDays($validated['duree_jours']),
+            'sanctionnee_par' => $request->user()->id
+        ]);
+
+        return response()->json([
+            'message' => "Pharmacie suspendue pour {$validated['duree_jours']} jours",
+            'pharmacie' => $pharmacie
+        ]);
+    }
+
+    public function debloquerPharmacie(Request $request, Pharmacie $pharmacie)
+    {
+        $pharmacie->update([
+            'statut_activite' => 'active',
+            'motif_sanction' => null,
+            'date_sanction' => null,
+            'date_fin_sanction' => null,
+            'sanctionnee_par' => null
+        ]);
+
+        return response()->json([
+            'message' => 'Pharmacie débloquée avec succès',
+            'pharmacie' => $pharmacie
+        ]);
+    }
+
+    public function pharmaciesSanctionnees()
+    {
+        return Pharmacie::whereIn('statut_activite', ['bloquee', 'suspendue'])
+            ->with(['pharmacien.user', 'sanctionneurUser'])
+            ->get();
+    }
 }

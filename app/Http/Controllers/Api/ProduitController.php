@@ -11,6 +11,7 @@ class ProduitController extends Controller
     public function index(Request $request)
     {
         $pharmacieId = $request->pharmacie_id;
+        $grouper = $request->boolean('grouper', false);
         
         $query = Produit::with(['medicament', 'produitParapharmacie']);
         
@@ -29,11 +30,33 @@ class ProduitController extends Controller
             }]);
         } else {
             $query->with(['pharmacies' => function($q) {
-                $q->withPivot('quantite_disponible');
-            }]);
+                $q->withPivot('quantite_disponible')
+                  ->wherePivot('quantite_disponible', '>', 0);
+            }])->whereHas('pharmacies', function($q) {
+                $q->where('pharmacie_produit.quantite_disponible', '>', 0);
+            });
         }
 
         $produits = $query->paginate(20);
+        
+        if ($grouper && !$pharmacieId) {
+            // Regrouper les produits par nom
+            $produitsGroupes = $produits->getCollection()->groupBy('nom_produit')->map(function($groupe) {
+                $premier = $groupe->first();
+                $premier->stock_total = $groupe->sum(function($p) {
+                    return $p->pharmacies->sum('pivot.quantite_disponible');
+                });
+                $premier->pharmacies_count = $groupe->sum(function($p) {
+                    return $p->pharmacies->count();
+                });
+                $premier->image_url = $premier->image ? asset('storage/' . $premier->image) : null;
+                unset($premier->pharmacies, $premier->stock);
+                return $premier;
+            })->values();
+            
+            $produits->setCollection($produitsGroupes);
+            return $produits;
+        }
         
         $produits->getCollection()->transform(function($produit) use ($pharmacieId) {
             if ($pharmacieId) {
@@ -41,9 +64,10 @@ class ProduitController extends Controller
                 $produit->stock_pharmacie = $stockPharmacie ? $stockPharmacie->pivot->quantite_disponible : 0;
             } else {
                 $produit->stock_total = $produit->pharmacies->sum('pivot.quantite_disponible');
-                $produit->pharmacies_count = $produit->pharmacies->where('pivot.quantite_disponible', '>', 0)->count();
+                $produit->pharmacies_count = $produit->pharmacies->count();
             }
-            unset($produit->pharmacies);
+            $produit->image_url = $produit->image ? asset('storage/' . $produit->image) : null;
+            unset($produit->pharmacies, $produit->stock);
             return $produit;
         });
 
@@ -92,6 +116,7 @@ class ProduitController extends Controller
             });
         }
         
+        $produit->image_url = $produit->image ? asset('storage/' . $produit->image) : null;
         unset($produit->pharmacies);
         return $produit;
     }
@@ -116,11 +141,25 @@ class ProduitController extends Controller
             'terme' => 'required|string|min:2'
         ]);
 
-        return Produit::where('nom_produit', 'like', '%' . $request->terme . '%')
+        $produits = Produit::where('nom_produit', 'like', '%' . $request->terme . '%')
             ->orWhere('description', 'like', '%' . $request->terme . '%')
-            ->with(['medicament', 'produitParapharmacie'])
+            ->with(['pharmacies' => function($q) {
+                $q->withPivot('quantite_disponible')
+                  ->where('pharmacie_produit.quantite_disponible', '>', 0);
+            }])
+            ->whereHas('pharmacies', function($q) {
+                $q->where('pharmacie_produit.quantite_disponible', '>', 0);
+            })
             ->limit(10)
             ->get();
+            
+        return $produits->map(function($produit) {
+            $produit->stock_total = $produit->pharmacies->sum('pivot.quantite_disponible');
+            $produit->pharmacies_count = $produit->pharmacies->count();
+            $produit->image_url = $produit->image ? asset('storage/' . $produit->image) : null;
+            unset($produit->pharmacies);
+            return $produit;
+        });
     }
 
     public function pharmaciesDisponibles(Produit $produit, Request $request)

@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('photo_url');
             $table->enum('statut', ['en_attente', 'envoyee', 'validee', 'rejetee'])->default('en_attente');
             $table->date('date_envoi');
+            $table->text('commentaire')->nullable();
             $table->timestamps();
         });
     }

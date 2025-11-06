@@ -9,8 +9,14 @@ use Illuminate\Http\Request;
 
 class StockController extends Controller
 {
-    public function index(Pharmacie $pharmacie)
+    public function index(Request $request, Pharmacie $pharmacie)
     {
+        // Vérifier que le pharmacien a accès à cette pharmacie
+        $pharmacien = $request->user()->pharmacien;
+        if (!$pharmacien || !$pharmacien->pharmacies->contains($pharmacie->id)) {
+            return response()->json(['message' => 'Accès refusé'], 403);
+        }
+
         return $pharmacie->produits()
             ->withPivot('quantite_disponible')
             ->get()
@@ -26,6 +32,12 @@ class StockController extends Controller
 
     public function update(Request $request, Pharmacie $pharmacie, Produit $produit)
     {
+        // Vérifier que le pharmacien a accès à cette pharmacie
+        $pharmacien = $request->user()->pharmacien;
+        if (!$pharmacien || !$pharmacien->pharmacies->contains($pharmacie->id)) {
+            return response()->json(['message' => 'Accès refusé'], 403);
+        }
+
         $request->validate([
             'quantite' => 'required|integer|min:0'
         ]);
@@ -39,6 +51,12 @@ class StockController extends Controller
 
     public function incrementer(Request $request, Pharmacie $pharmacie, Produit $produit)
     {
+        // Vérifier que le pharmacien a accès à cette pharmacie
+        $pharmacien = $request->user()->pharmacien;
+        if (!$pharmacien || !$pharmacien->pharmacies->contains($pharmacie->id)) {
+            return response()->json(['message' => 'Accès refusé'], 403);
+        }
+
         $request->validate([
             'quantite' => 'required|integer|min:1'
         ]);
@@ -55,6 +73,12 @@ class StockController extends Controller
 
     public function decrementer(Request $request, Pharmacie $pharmacie, Produit $produit)
     {
+        // Vérifier que le pharmacien a accès à cette pharmacie
+        $pharmacien = $request->user()->pharmacien;
+        if (!$pharmacien || !$pharmacien->pharmacies->contains($pharmacie->id)) {
+            return response()->json(['message' => 'Accès refusé'], 403);
+        }
+
         $request->validate([
             'quantite' => 'required|integer|min:1'
         ]);

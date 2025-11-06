@@ -20,7 +20,7 @@ class AuthController extends Controller
             'telephone' => 'required|string',
             'adresse' => 'required|string',
             'date_naissance' => 'required|date',
-            'role' => 'required|in:client,pharmacien'
+            'role' => 'required|in:client,pharmacien,admin,autorite_sante'
         ]);
 
         $user = User::create([
@@ -35,12 +35,18 @@ class AuthController extends Controller
 
         if ($validated['role'] === 'client') {
             Client::create(['user_id' => $user->id]);
-        } else {
+        } elseif ($validated['role'] === 'pharmacien') {
             Pharmacien::create([
                 'user_id' => $user->id,
                 'pharmacies_associees' => ''
             ]);
+        } elseif ($validated['role'] === 'autorite_sante') {
+            \App\Models\AutoriteSante::create([
+                'user_id' => $user->id,
+                'code_autorite' => 'AS-' . strtoupper(substr(md5(uniqid()), 0, 8))
+            ]);
         }
+        // admin n'a pas besoin de profil spécifique
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
@@ -53,25 +59,33 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        $validated = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required'
-        ]);
+        try {
+            \Log::info('Login attempt', $request->all());
+            
+            $validated = $request->validate([
+                'email' => 'required|email',
+                'password' => 'required'
+            ]);
 
-        $user = User::where('email', $validated['email'])->first();
+            $user = User::where('email', $validated['email'])->first();
+            \Log::info('User found', ['user' => $user ? $user->email : 'not found']);
 
-        if (!$user || !Hash::check($validated['password'], $user->password)) {
-            return response()->json(['message' => 'Identifiants invalides'], 401);
+            if (!$user || !Hash::check($validated['password'], $user->password)) {
+                return response()->json(['message' => 'Identifiants invalides'], 401);
+            }
+
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            return response()->json([
+                'user' => $user,
+                'token' => $token,
+                'role' => $user->role,
+                'dashboard_url' => '/api/dashboard'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Login error', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erreur serveur: ' . $e->getMessage()], 500);
         }
-
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json([
-            'user' => $user,
-            'token' => $token,
-            'role' => $user->role,
-            'dashboard_url' => '/api/dashboard'
-        ]);
     }
 
     public function me(Request $request)

@@ -25,7 +25,10 @@ class User extends Authenticatable
         'telephone',
         'adresse',
         'date_naissance',
-        'role'
+        'role',
+        'code_autorisation',
+        'type_controle',
+        'organisme'
     ];
 
     /**

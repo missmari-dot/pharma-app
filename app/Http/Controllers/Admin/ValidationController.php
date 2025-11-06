@@ -19,7 +19,7 @@ class ValidationController extends Controller
 
     public function demandesPharmacies()
     {
-        return Pharmacie::where('statut', 'pending')
+        return Pharmacie::where('statut_validation', 'pending')
             ->with('pharmacien.user')
             ->get();
     }
@@ -40,15 +40,43 @@ class ValidationController extends Controller
 
     public function validerPharmacie(Request $request, Pharmacie $pharmacie)
     {
-        $request->validate([
-            'statut' => 'required|in:approved,rejected'
-        ]);
-
-        $pharmacie->update(['statut' => $request->statut]);
+        $pharmacie->update(['statut_validation' => 'approved']);
 
         return response()->json([
-            'message' => 'Statut mis à jour',
+            'message' => 'Pharmacie validée',
             'pharmacie' => $pharmacie
         ]);
+    }
+
+    public function rejeterPharmacien(Request $request, User $user)
+    {
+        $user->update(['statut' => 'rejected']);
+        return response()->json(['message' => 'Pharmacien rejeté']);
+    }
+
+    public function rejeterPharmacie(Request $request, Pharmacie $pharmacie)
+    {
+        $pharmacie->update(['statut_validation' => 'rejected']);
+        return response()->json(['message' => 'Pharmacie rejetée']);
+    }
+
+    public function listePharmacies()
+    {
+        return Pharmacie::with('pharmacien.user')->get();
+    }
+    
+    public function voirDocuments(Pharmacie $pharmacie)
+    {
+        if (!$pharmacie->documents_justificatifs) {
+            return response()->json(['message' => 'Aucun document disponible'], 404);
+        }
+        
+        $filePath = storage_path('app/public/' . $pharmacie->documents_justificatifs);
+        
+        if (!file_exists($filePath)) {
+            return response()->json(['message' => 'Document non trouvé'], 404);
+        }
+        
+        return response()->file($filePath);
     }
 }

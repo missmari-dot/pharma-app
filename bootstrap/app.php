@@ -14,6 +14,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
+            'pharmacie.validee' => \App\Http\Middleware\PharmacieValidee::class,
+        ]);
+        
+        // Configuration CORS pour Angular
+        $middleware->api([
+            \Illuminate\Http\Middleware\HandleCors::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

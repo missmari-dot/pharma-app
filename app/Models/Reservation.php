@@ -12,13 +12,23 @@ class Reservation extends Model
         'ordonnance_id',
         'date_reservation',
         'statut',
-        'montant_total'
+        'montant_total',
+        'code_retrait'
     ];
 
     protected $casts = [
         'date_reservation' => 'datetime',
         'montant_total' => 'decimal:2'
     ];
+
+    protected static function booted()
+    {
+        static::retrieved(function ($reservation) {
+            if ($reservation->estExpiree()) {
+                $reservation->marquerCommeExpiree();
+            }
+        });
+    }
 
     public function client()
     {
@@ -45,5 +55,38 @@ class Reservation extends Model
         return $this->lignesReservation->sum(function ($ligne) {
             return $ligne->quantite_reservee * $ligne->prix_unitaire;
         });
+    }
+
+    public static function genererCodeRetrait()
+    {
+        do {
+            $code = strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 8));
+        } while (self::where('code_retrait', $code)->exists());
+        
+        return $code;
+    }
+
+    public function estExpiree()
+    {
+        return $this->statut === 'en_attente' && 
+               $this->date_reservation->addHours(24)->isPast();
+    }
+
+    public function marquerCommeExpiree()
+    {
+        if ($this->estExpiree()) {
+            $this->update(['statut' => 'expire']);
+            
+            // Libérer le stock réservé
+            foreach ($this->lignesReservation as $ligne) {
+                $this->pharmacie->produits()->updateExistingPivot($ligne->produit_id, [
+                    'quantite_disponible' => \DB::raw("quantite_disponible + {$ligne->quantite_reservee}")
+                ]);
+            }
+            
+            return true;
+        }
+        
+        return false;
     }
 }
