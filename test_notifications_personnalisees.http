@@ -1,0 +1,63 @@
+### Test des notifications personnalisées
+
+# 1. Connexion client 1
+POST http://localhost:8000/api/login
+Content-Type: application/json
+
+{
+    "email": "client1@test.com",
+    "password": "password"
+}
+
+### 
+@token1 = {{login.response.body.token}}
+
+# 2. Connexion client 2  
+POST http://localhost:8000/api/login
+Content-Type: application/json
+
+{
+    "email": "client2@test.com", 
+    "password": "password"
+}
+
+###
+@token2 = {{login.response.body.token}}
+
+# 3. Client 1 - Envoyer notification personnalisée
+POST http://localhost:8000/api/test-notifications/personnalisee
+Authorization: Bearer {{token1}}
+Content-Type: application/json
+
+{}
+
+# 4. Client 1 - Voir ses notifications (doit voir sa notification)
+GET http://localhost:8000/api/notifications
+Authorization: Bearer {{token1}}
+
+# 5. Client 2 - Voir ses notifications (ne doit PAS voir la notification du client 1)
+GET http://localhost:8000/api/notifications  
+Authorization: Bearer {{token2}}
+
+# 6. Client 2 - Envoyer sa propre notification
+POST http://localhost:8000/api/test-notifications/rappel-medicament
+Authorization: Bearer {{token2}}
+Content-Type: application/json
+
+{}
+
+# 7. Client 2 - Voir ses notifications (doit voir uniquement sa notification)
+GET http://localhost:8000/api/notifications
+Authorization: Bearer {{token2}}
+
+# 8. Client 1 - Voir ses notifications (ne doit PAS voir la notification du client 2)
+GET http://localhost:8000/api/notifications
+Authorization: Bearer {{token1}}
+
+# 9. Test compteur notifications non lues - Client 1
+GET http://localhost:8000/api/notifications/compter
+Authorization: Bearer {{token1}}
+
+# 10. Test compteur notifications non lues - Client 2  
+GET http://localhost:8000/api/notifications/compter
+Authorization: Bearer {{token2}}

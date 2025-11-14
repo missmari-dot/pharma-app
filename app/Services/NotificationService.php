@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\User;
+use App\Models\Notification;
 use App\Models\Ordonnance;
 use App\Models\Reservation;
 
@@ -100,40 +101,79 @@ class NotificationService
 
     private function envoyerNotification(User $user, array $notification)
     {
-        // Sauvegarde en base pour historique
-        \DB::table('notifications')->insert([
+        // Créer notification personnalisée pour cet utilisateur uniquement
+        Notification::create([
             'user_id' => $user->id,
             'titre' => $notification['titre'],
             'message' => $notification['message'],
             'type' => $notification['type'],
-            'data' => json_encode($notification['data'] ?? []),
-            'lu' => false,
-            'created_at' => now(),
-            'updated_at' => now()
+            'data' => $notification['data'] ?? [],
+            'lu' => false
         ]);
 
-        // Log pour debug
-        \Log::info('Notification envoyée', [
-            'user' => $user->email,
-            'type' => $notification['type'],
-            'message' => $notification['message']
+        \Log::info('Notification personnalisée envoyée', [
+            'user_id' => $user->id,
+            'user_email' => $user->email,
+            'type' => $notification['type']
         ]);
     }
 
     public function notificationsUtilisateur(User $user)
     {
-        return \DB::table('notifications')
-            ->where('user_id', $user->id)
+        $notifications = $user->notifications()
             ->orderBy('created_at', 'desc')
             ->limit(20)
             ->get();
+
+        return response()->json([
+            'notifications' => $notifications,
+            'total' => $notifications->count(),
+            'non_lues' => $user->notificationsNonLues()->count()
+        ]);
     }
 
     public function marquerCommeLu($notificationId, User $user)
     {
-        return \DB::table('notifications')
-            ->where('id', $notificationId)
-            ->where('user_id', $user->id)
-            ->update(['lu' => true]);
+        $notification = $user->notifications()->find($notificationId);
+        
+        if (!$notification) {
+            return response()->json(['message' => 'Notification non trouvée'], 404);
+        }
+
+        $notification->marquerCommeLue();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Notification marquée comme lue'
+        ]);
+    }
+
+    public function toutMarquerCommeLu(User $user)
+    {
+        $count = $user->notificationsNonLues()->count();
+        $user->notificationsNonLues()->update(['lu' => true]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "$count notifications marquées comme lues",
+            'count' => $count
+        ]);
+    }
+
+    public function notificationsNonLues(User $user)
+    {
+        $notifications = $user->notificationsNonLues()
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'notifications' => $notifications,
+            'count' => $notifications->count()
+        ]);
+    }
+
+    public function compterNonLues(User $user)
+    {
+        return $user->notificationsNonLues()->count();
     }
 }

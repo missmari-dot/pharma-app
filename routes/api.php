@@ -110,6 +110,9 @@ Route::post('/test-sms', function(\Illuminate\Http\Request $request) {
     return response()->json($result);
 });
 
+// Inclure les routes de test des notifications
+require __DIR__ . '/test_notifications.php';
+
 // ============================================
 // ROUTES AUTHENTIFIÉES (Tous rôles)
 // ============================================
@@ -153,18 +156,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Notifications
     Route::prefix('notifications')->group(function () {
-        Route::get('/', function(Request $request) {
-            $service = new NotificationService();
-            return $service->notificationsUtilisateur($request->user());
-        });
-        Route::patch('/{id}/lire', function($id, Request $request) {
-            $service = new NotificationService();
-            return $service->marquerCommeLu($id, $request->user());
-        });
-        Route::patch('/tout-lire', function(Request $request) {
-            $service = new NotificationService();
-            return $service->toutMarquerCommeLu($request->user());
-        });
+        Route::get('/', [\App\Http\Controllers\Api\NotificationController::class, 'index']);
+        Route::get('/non-lues', [\App\Http\Controllers\Api\NotificationController::class, 'nonLues']);
+        Route::get('/compter', [\App\Http\Controllers\Api\NotificationController::class, 'compter']);
+        Route::patch('/{id}/lire', [\App\Http\Controllers\Api\NotificationController::class, 'marquerCommeLu'])
+            ->middleware(\App\Http\Middleware\NotificationOwnership::class);
+        Route::patch('/tout-lire', [\App\Http\Controllers\Api\NotificationController::class, 'toutMarquerCommeLu']);
     });
 });
 

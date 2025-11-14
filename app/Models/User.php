@@ -76,4 +76,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(ConseilSante::class, 'pharmacien_id');
     }
+
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class);
+    }
+
+    public function notificationsNonLues()
+    {
+        return $this->notifications()->where('lu', false);
+    }
 }

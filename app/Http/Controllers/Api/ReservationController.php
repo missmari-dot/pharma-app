@@ -180,9 +180,14 @@ class ReservationController extends Controller
         // Mettre à jour le montant total
         $reservation->update(['montant_total' => $montantTotal]);
 
-        // Notifier le pharmacien
+        // Notifier le pharmacien de la nouvelle réservation
         $notificationService = new \App\Services\NotificationService();
-        $notificationService->notifierReservationPrete($reservation);
+        $notificationService->envoyerNotification($pharmacie->pharmacien->user, [
+            'titre' => 'Nouvelle réservation',
+            'message' => "Nouvelle réservation de {$request->user()->nom}",
+            'type' => 'nouvelle_reservation',
+            'data' => ['reservation_id' => $reservation->id]
+        ]);
 
         return response()->json([
             'message' => 'Réservation créée avec succès',

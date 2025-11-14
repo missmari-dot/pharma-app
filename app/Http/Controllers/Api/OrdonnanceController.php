@@ -415,7 +415,18 @@ class OrdonnanceController extends Controller
             $reservation->update(['montant_total' => $montantTotal]);
         }
 
-        // Notification push au client
+        // Notifications personnalisées au client
+        $notificationService = new \App\Services\NotificationService();
+        $notificationService->notifierOrdonnanceValidee($ordonnance);
+        
+        // Notification personnalisée supplémentaire
+        $notificationPersonnalisee = new \App\Services\NotificationPersonnaliseeService();
+        $notificationPersonnalisee->notifierPromotionPersonnalisee(
+            $ordonnance->client->user_id,
+            "Votre ordonnance est prête ! Profitez de 10% de réduction sur votre prochain achat.",
+            []
+        );
+        
         try {
             $client = $ordonnance->client;
             if ($client && $client->fcm_token) {
@@ -426,7 +437,7 @@ class OrdonnanceController extends Controller
                 ]);
             }
         } catch (\Exception $e) {
-            // Log l'erreur mais ne pas faire échouer la validation
+            \Log::error('Erreur notification push: ' . $e->getMessage());
         }
 
         return response()->json([
@@ -453,9 +464,16 @@ class OrdonnanceController extends Controller
             'commentaire' => $validated['commentaire']
         ]);
 
-        // Notifier le client du rejet
+        // Notifier le client du rejet avec conseil personnalisé
         $notificationService = new \App\Services\NotificationService();
         $notificationService->notifierOrdonnanceRejetee($ordonnance);
+        
+        // Conseil personnalisé après rejet
+        $notificationPersonnalisee = new \App\Services\NotificationPersonnaliseeService();
+        $notificationPersonnalisee->notifierConseilSantePersonnalise(
+            $ordonnance->client->user_id,
+            "Votre ordonnance a été rejetée. Nous vous conseillons de consulter votre médecin pour une nouvelle prescription."
+        );
 
         return response()->json([
             'message' => 'Ordonnance rejetée',
