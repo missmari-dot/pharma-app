@@ -14,10 +14,10 @@ class NotificationPersonnaliseeService
             'titre' => 'Nouveau produit disponible',
             'message' => "Le produit {$produit->nom_produit} est maintenant disponible à {$pharmacie->nom_pharmacie}",
             'type' => 'produit_disponible',
-            'data' => [
+            'data' => json_encode([
                 'produit_id' => $produit->id,
                 'pharmacie_id' => $pharmacie->id
-            ]
+            ])
         ]);
     }
 
@@ -28,7 +28,7 @@ class NotificationPersonnaliseeService
             'titre' => 'Offre spéciale pour vous',
             'message' => $message,
             'type' => 'promotion_personnalisee',
-            'data' => ['produits' => $produits]
+            'data' => json_encode(['produits' => $produits])
         ]);
     }
 
@@ -39,7 +39,7 @@ class NotificationPersonnaliseeService
             'titre' => 'Rappel médicament',
             'message' => "N'oubliez pas de prendre votre {$medicament} à {$heureRappel}",
             'type' => 'rappel_medicament',
-            'data' => ['medicament' => $medicament, 'heure' => $heureRappel]
+            'data' => json_encode(['medicament' => $medicament, 'heure' => $heureRappel])
         ]);
     }
 
@@ -50,7 +50,7 @@ class NotificationPersonnaliseeService
             'titre' => 'Pharmacie fermée',
             'message' => "{$pharmacie->nom_pharmacie} est fermée. Voici des alternatives proches.",
             'type' => 'pharmacie_fermee',
-            'data' => ['alternatives' => $pharmaciesAlternatives]
+            'data' => json_encode(['alternatives' => $pharmaciesAlternatives])
         ]);
     }
 
@@ -61,7 +61,7 @@ class NotificationPersonnaliseeService
             'titre' => 'Conseil santé personnalisé',
             'message' => $conseil,
             'type' => 'conseil_sante',
-            'data' => []
+            'data' => json_encode([])
         ]);
     }
 }

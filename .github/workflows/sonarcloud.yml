@@ -42,13 +42,24 @@ jobs:
           touch database/database.sqlite
           php artisan migrate --force
 
-      - name: Run tests and generate coverage
+      - name: Run tests
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: database/database.sqlite
+        run: php artisan test
+        
+      - name: Generate coverage (if possible)
         env:
           DB_CONNECTION: sqlite
           DB_DATABASE: database/database.sqlite
         run: |
-          php -m | grep -i xdebug || echo "Xdebug not found, running tests without coverage..."
-          php artisan test --coverage-clover=coverage.xml || php artisan test
+          if php -m | grep -q xdebug; then
+            echo "Xdebug found, generating coverage..."
+            php artisan test --coverage-clover=coverage.xml
+          else
+            echo "Xdebug not available, creating empty coverage file for SonarCloud"
+            touch coverage.xml
+          fi
         continue-on-error: true
 
       - name: SonarCloud Scan

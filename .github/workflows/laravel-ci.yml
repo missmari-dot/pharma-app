@@ -40,14 +40,11 @@ jobs:
           touch database/database.sqlite
           php artisan migrate --force
 
-      - name: ✅ Run tests with coverage
+      - name: ✅ Run tests
         env:
           DB_CONNECTION: sqlite
           DB_DATABASE: database/database.sqlite
-        run: |
-          php -m | grep -i xdebug || echo "Xdebug not found, installing..."
-          php artisan test --coverage-clover=coverage.xml || php artisan test
-        continue-on-error: true
+        run: php artisan test
 
       - name: 📊 SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v2
