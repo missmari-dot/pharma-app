@@ -46,7 +46,9 @@ jobs:
         env:
           DB_CONNECTION: sqlite
           DB_DATABASE: database/database.sqlite
-        run: php artisan test --coverage-clover=coverage.xml
+        run: |
+          php -m | grep -i xdebug || echo "Xdebug not found, running tests without coverage..."
+          php artisan test --coverage-clover=coverage.xml || php artisan test
         continue-on-error: true
 
       - name: SonarCloud Scan

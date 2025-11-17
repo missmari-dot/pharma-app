@@ -132,6 +132,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/pharmacien', [PharmacienDashboardController::class, 'dashboard']);
     Route::get('/dashboard/autorite', [AutoriteSanteDashboardController::class, 'dashboard']);
 
+    // Pharmacies (création nécessite authentification)
+    Route::post('/pharmacies', [PharmacieController::class, 'store']);
+
     // Ordonnances
     Route::prefix('ordonnances')->group(function () {
         Route::get('/', [OrdonnanceController::class, 'index']);
@@ -143,6 +146,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/envoyer-sans-medicaments', [OrdonnanceController::class, 'envoyerSansMedicaments']);
         Route::post('/upload', [OrdonnanceController::class, 'uploadImage']);
         Route::get('/{ordonnance}', [OrdonnanceController::class, 'show']);
+        Route::patch('/{ordonnance}/valider', [OrdonnanceController::class, 'valider']);
+        Route::patch('/{ordonnance}/rejeter', [OrdonnanceController::class, 'rejeter']);
         Route::delete('/{ordonnance}', [OrdonnanceController::class, 'destroy']);
     });
 

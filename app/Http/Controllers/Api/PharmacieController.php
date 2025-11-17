@@ -16,6 +16,11 @@ class PharmacieController extends Controller
 
     public function store(Request $request)
     {
+        // Vérifier que l'utilisateur est authentifié et est un pharmacien
+        if (!$request->user() || $request->user()->role !== 'pharmacien') {
+            return response()->json(['message' => 'Seuls les pharmaciens peuvent créer des pharmacies'], 403);
+        }
+
         $validated = $request->validate([
             'nom_pharmacie' => 'required|string|max:255',
             'adresse_pharmacie' => 'required|string',
@@ -24,10 +29,11 @@ class PharmacieController extends Controller
             'heure_fermeture' => 'required|date_format:H:i',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
-            'pharmacien_id' => 'required|exists:users,id'
+            'pharmacien_id' => 'required|exists:pharmaciens,id'
         ]);
 
-        return Pharmacie::create($validated);
+        $pharmacie = Pharmacie::create($validated);
+        return response()->json($pharmacie, 201);
     }
 
     public function show(Pharmacie $pharmacie)
