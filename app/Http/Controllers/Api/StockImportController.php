@@ -81,26 +81,66 @@ class StockImportController extends Controller
 
         try {
             $file = $request->file('fichier_excel');
-            $handle = fopen($file->getPathname(), 'r');
             
-            if (!$handle) {
+            // Vérifier si c'est un fichier Excel (.xlsx)
+            if ($file->getClientOriginalExtension() === 'xlsx') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Impossible de lire le fichier'
+                    'message' => 'Les fichiers Excel (.xlsx) ne sont pas supportés. Veuillez exporter en CSV.'
                 ], 400);
+            }
+            
+            $content = file_get_contents($file->getPathname());
+            
+            // Vérifier si le contenu semble être du texte
+            if (!mb_check_encoding($content, 'UTF-8') && !mb_check_encoding($content, 'ISO-8859-1')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Le fichier semble corrompu ou n\'est pas un fichier CSV valide.'
+                ], 400);
+            }
+            
+            // Détecter et convertir l'encodage
+            $encoding = mb_detect_encoding($content, ['UTF-8', 'ISO-8859-1', 'Windows-1252'], true);
+            if ($encoding && $encoding !== 'UTF-8') {
+                $content = mb_convert_encoding($content, 'UTF-8', $encoding);
             }
             
             $imported = 0;
             $errors = [];
             $lineNumber = 0;
             
-            // Skip header
-            fgetcsv($handle);
+            // Lire tout le contenu et traiter ligne par ligne
+            $lines = explode("\n", $content);
             
-            while (($data = fgetcsv($handle, 1000, ',')) !== FALSE) {
+            // Debug: voir le contenu
+            \Log::info('Nombre de lignes: ' . count($lines));
+            \Log::info('Première ligne: ' . ($lines[0] ?? 'vide'));
+            \Log::info('Deuxième ligne: ' . ($lines[1] ?? 'vide'));
+            
+            // Skip header
+            array_shift($lines);
+            
+            foreach ($lines as $line) {
                 $lineNumber++;
                 
-                if (count($data) < 2) continue;
+                if (empty(trim($line))) continue;
+                
+                // Essayer différents délimiteurs
+                $data = str_getcsv($line, ';'); // Point-virgule d'abord
+                if (count($data) < 2) {
+                    $data = str_getcsv($line, ','); // Puis virgule
+                }
+                if (count($data) < 2) {
+                    $data = str_getcsv($line, "\t"); // Puis tabulation
+                }
+                
+                \Log::info("Ligne {$lineNumber}: " . json_encode($data));
+                
+                if (count($data) < 2) {
+                    \Log::info("Ligne {$lineNumber} ignorée: moins de 2 colonnes");
+                    continue;
+                }
                 
                 $codeProduit = trim($data[0] ?? '');
                 $nomProduit = trim($data[1] ?? '');
@@ -147,8 +187,6 @@ class StockImportController extends Controller
                     $errors[] = "Ligne {$lineNumber}: {$e->getMessage()}";
                 }
             }
-            
-            fclose($handle);
             
             return response()->json([
                 'success' => true,

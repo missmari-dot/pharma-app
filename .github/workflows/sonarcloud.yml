@@ -23,7 +23,7 @@ jobs:
         with:
           php-version: '8.2'
           extensions: mbstring, xml, bcmath, curl, dom, gd, json, pdo_mysql
-          coverage: xdebug
+          coverage: pcov
 
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress
@@ -42,25 +42,11 @@ jobs:
           touch database/database.sqlite
           php artisan migrate --force
 
-      - name: Run tests
+      - name: Run tests with coverage
         env:
           DB_CONNECTION: sqlite
           DB_DATABASE: database/database.sqlite
-        run: php artisan test
-        
-      - name: Generate coverage (if possible)
-        env:
-          DB_CONNECTION: sqlite
-          DB_DATABASE: database/database.sqlite
-        run: |
-          if php -m | grep -q xdebug; then
-            echo "Xdebug found, generating coverage..."
-            php artisan test --coverage-clover=coverage.xml
-          else
-            echo "Xdebug not available, creating empty coverage file for SonarCloud"
-            touch coverage.xml
-          fi
-        continue-on-error: true
+        run: php artisan test --coverage-clover=coverage.xml
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v2
