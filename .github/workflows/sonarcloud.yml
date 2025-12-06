@@ -50,12 +50,11 @@ jobs:
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v2
-        continue-on-error: true
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_SCANNER_OPTS: -Dsonar.qualitygate.wait=false
         with:
           args: >
             -Dsonar.projectKey=missmari-dot_pharma-app
             -Dsonar.organization=missmari-dot
             -Dsonar.php.coverage.reportPaths=coverage.xml
-            -Dsonar.qualitygate.wait=false
