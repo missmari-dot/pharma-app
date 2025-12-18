@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Notification;
 use App\Models\Ordonnance;
 use App\Models\Reservation;
+use App\Services\FirebaseService;
 
 class NotificationService
 {
@@ -111,10 +112,22 @@ class NotificationService
             'lu' => false
         ]);
 
+        // Envoyer notification push Firebase si token disponible
+        if ($user->fcm_token) {
+            $firebaseService = new FirebaseService();
+            $firebaseService->envoyerNotificationPush(
+                $user->fcm_token,
+                $notification['titre'],
+                $notification['message'],
+                $notification['data'] ?? []
+            );
+        }
+
         \Log::info('Notification personnalisée envoyée', [
             'user_id' => $user->id,
             'user_email' => $user->email,
-            'type' => $notification['type']
+            'type' => $notification['type'],
+            'has_fcm_token' => !empty($user->fcm_token)
         ]);
     }
 

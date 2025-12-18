@@ -113,6 +113,15 @@ Route::post('/test-sms', function(\Illuminate\Http\Request $request) {
 // Inclure les routes de test des notifications
 require __DIR__ . '/test_notifications.php';
 
+// Inclure les routes Firebase Cloud Messaging
+require __DIR__ . '/fcm.php';
+
+// Config Firebase pour le frontend
+require __DIR__ . '/firebase-config.php';
+
+// Health check pour Railway
+require __DIR__ . '/health.php';
+
 // ============================================
 // ROUTES AUTHENTIFIÉES (Tous rôles)
 // ============================================

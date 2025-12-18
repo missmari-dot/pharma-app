@@ -1,31 +1,47 @@
-# Image de base PHP avec extensions nécessaires
-FROM php:8.2-fpm
+FROM php:8.1-fpm
 
-# Installer les dépendances système
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     git \
-    unzip \
-    libpq-dev \
-    libonig-dev \
-    libzip-dev \
-    zip \
     curl \
-    && docker-php-ext-install pdo pdo_mysql mbstring zip bcmath
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    zip \
+    unzip \
+    nginx
 
-# Installer Composer
-COPY --from=composer:2.6 /usr/bin/composer /usr/bin/composer
+# Clear cache
+RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Définir le répertoire de travail
-WORKDIR /var/www/html
+# Install PHP extensions
+RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
 
-# Copier les fichiers Laravel
-COPY . .
+# Get latest Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Installer les dépendances PHP
-RUN composer install --no-dev --optimize-autoloader
+# Set working directory
+WORKDIR /var/www
 
-# Donner les droits sur storage et bootstrap/cache
-RUN chown -R www-data:www-data storage bootstrap/cache
+# Copy existing application directory contents
+COPY . /var/www
 
-EXPOSE 9000
-CMD ["php-fpm"]
+# Install dependencies
+RUN composer install --optimize-autoloader --no-dev
+
+# Copy nginx config
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Set permissions
+RUN chown -R www-data:www-data /var/www \
+    && chmod -R 755 /var/www/storage
+
+# Expose port
+EXPOSE 80
+
+# Start services
+CMD php artisan config:cache && \
+    php artisan route:cache && \
+    php artisan migrate --force && \
+    service nginx start && \
+    php-fpm

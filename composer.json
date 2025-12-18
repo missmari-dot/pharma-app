@@ -7,6 +7,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "firebase/php-jwt": "^6.11",
         "google/apiclient": "2.15",
         "guzzlehttp/guzzle": "^7.10",
         "laravel/framework": "^12.0",
